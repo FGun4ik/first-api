@@ -25,7 +25,11 @@ func GetHandler(w http.ResponseWriter, r *http.Request) {
 	var messageArr []Message
 	DB.Find(&messageArr)
 
-	json.NewEncoder(w).Encode(messageArr)
+	var result []requestBody
+	for _, message := range messageArr {
+		result = append(result, requestBody{Task: message.Task, IsDone: message.IsDone})
+	}
+	json.NewEncoder(w).Encode(result)
 }
 
 func main() {
