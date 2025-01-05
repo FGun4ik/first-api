@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"github.com/gorilla/mux"
 	"net/http"
+	"strconv"
 )
 
 type requestBody struct {
@@ -32,6 +33,36 @@ func GetHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(result)
 }
 
+func UpdateHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id, _ := strconv.Atoi(vars["id"])
+	var body requestBody
+	json.NewDecoder(r.Body).Decode(&body)
+
+	var message Message
+	DB.First(&message, id)
+
+	if body.Task != "" {
+		message.Task = body.Task
+	}
+	message.IsDone = body.IsDone
+	DB.Save(&message)
+	json.NewEncoder(w).Encode(body)
+}
+
+func DeleteHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id, _ := strconv.Atoi(vars["id"])
+
+	var body requestBody
+	json.NewDecoder(r.Body).Decode(&body)
+
+	var message Message
+	DB.First(&message, id)
+	DB.Delete(&message)
+	json.NewEncoder(w).Encode(body)
+}
+
 func main() {
 	InitDB()
 
@@ -40,5 +71,7 @@ func main() {
 	router := mux.NewRouter()
 	router.HandleFunc("/api/hello", PostHandler).Methods("POST")
 	router.HandleFunc("/api/hello", GetHandler).Methods("GET")
+	router.HandleFunc("/api/hello/{id:[0-9]+}", UpdateHandler).Methods("PUT", "PATCH")
+	router.HandleFunc("/api/hello/{id:[0-9]+}", DeleteHandler).Methods("DELETE")
 	http.ListenAndServe(":8080", router)
 }
