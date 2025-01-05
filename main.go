@@ -60,7 +60,7 @@ func DeleteHandler(w http.ResponseWriter, r *http.Request) {
 	var message Message
 	DB.First(&message, id)
 	DB.Delete(&message)
-	json.NewEncoder(w).Encode(body)
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func main() {
