@@ -2,23 +2,13 @@ package handlers
 
 import (
 	"FirstProject/internal/taskService" // Импортируем наш сервис
-	"encoding/json"
-	"github.com/gorilla/mux"
-	"net/http"
-	"strconv"
+	"FirstProject/internal/web/tasks"
+	"context"
 )
 
 type Handler struct {
 	Service *taskService.TaskService
 }
-
-type Response struct {
-	ID     uint   `json:"id"`
-	Task   string `json:"task"`
-	IsDone bool   `json:"is_done"`
-}
-
-// Нужна для создания структуры Handler на этапе инициализации приложения
 
 func NewHandler(service *taskService.TaskService) *Handler {
 	return &Handler{
@@ -26,93 +16,79 @@ func NewHandler(service *taskService.TaskService) *Handler {
 	}
 }
 
-func (h *Handler) GetTasksHandler(w http.ResponseWriter, r *http.Request) {
-	tasks, err := h.Service.GetAllTasks()
+func (h *Handler) GetTasks(_ context.Context, _ tasks.GetTasksRequestObject) (tasks.GetTasksResponseObject, error) {
+	// Получение всех задач из сервиса
+	allTasks, err := h.Service.GetAllTasks()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return nil, err
 	}
 
-	var response []Response
-	for _, task := range tasks {
-		response = append(response, Response{
-			ID:     task.ID,
-			Task:   task.Task,
-			IsDone: task.IsDone,
-		})
+	// Создаем переменную респон типа 200джейсонРеспонс
+	// Которую мы потом передадим в качестве ответа
+	response := tasks.GetTasks200JSONResponse{}
+
+	// Заполняем слайс response всеми задачами из БД
+	for _, tsk := range allTasks {
+		task := tasks.Task{
+			Id:     &tsk.ID,
+			Task:   &tsk.Task,
+			IsDone: &tsk.IsDone,
+		}
+		response = append(response, task)
 	}
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
+
+	// САМОЕ ПРЕКРАСНОЕ. Возвращаем просто респонс и nil!
+	return response, nil
 }
 
-func (h *Handler) PostTaskHandler(w http.ResponseWriter, r *http.Request) {
-	var task taskService.Task
-	err := json.NewDecoder(r.Body).Decode(&task)
+func (h *Handler) PostTasks(_ context.Context, request tasks.PostTasksRequestObject) (tasks.PostTasksResponseObject, error) {
+	// Распаковываем тело запроса напрямую, без декодера!
+	taskRequest := request.Body
+	// Обращаемся к сервису и создаем задачу
+	taskToCreate := taskService.Task{
+		Task:   *taskRequest.Task,
+		IsDone: *taskRequest.IsDone,
+	}
+	createdTask, err := h.Service.CreateTask(taskToCreate)
+
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
+		return nil, err
 	}
+	// создаем структуру респонс
+	response := tasks.PostTasks201JSONResponse{
+		Id:     &createdTask.ID,
+		Task:   &createdTask.Task,
+		IsDone: &createdTask.IsDone,
+	}
+	// Просто возвращаем респонс!
+	return response, nil
+}
+func (h *Handler) PatchTasksId(ctx context.Context, request tasks.PatchTasksIdRequestObject) (tasks.PatchTasksIdResponseObject, error) {
+	id := request.Id
+	taskRequest := request.Body
 
-	createdTask, err := h.Service.CreateTask(task)
+	taskToUpdate := taskService.Task{
+
+		Task:   *taskRequest.Task,
+		IsDone: *taskRequest.IsDone,
+	}
+	updatedTask, err := h.Service.UpdateTaskById(uint(id), taskToUpdate)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return nil, err
 	}
 
-	response := Response{
-		ID:     createdTask.ID,
-		Task:   createdTask.Task,
-		IsDone: createdTask.IsDone,
+	response := tasks.PatchTasksId200JSONResponse{
+		Id:     &updatedTask.ID,
+		Task:   &updatedTask.Task,
+		IsDone: &updatedTask.IsDone,
 	}
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
+	return response, nil
 }
 
-func (h *Handler) UpdateTaskHandler(w http.ResponseWriter, r *http.Request) {
-	var task taskService.Task
-	err := json.NewDecoder(r.Body).Decode(&task)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
+func (h *Handler) DeleteTasksId(ctx context.Context, request tasks.DeleteTasksIdRequestObject) (tasks.DeleteTasksIdResponseObject, error) {
+	id := request.Id
 
-	vars := mux.Vars(r)
-	id, err := strconv.Atoi(vars["id"])
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
+	_ = h.Service.DeleteTaskById(uint(id))
 
-	updateTask, err := h.Service.UpdateTaskById(uint(id), task)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	response := Response{
-		ID:     updateTask.ID,
-		Task:   updateTask.Task,
-		IsDone: updateTask.IsDone,
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-
-	json.NewEncoder(w).Encode(response)
-}
-
-func (h *Handler) DeleteTaskHandler(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	id, err := strconv.Atoi(vars["id"])
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-	err = h.Service.DeleteTaskById(uint(id))
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusNotFound)
-		return
-	}
-
-	w.WriteHeader(http.StatusNoContent)
+	return tasks.DeleteTasksId204Response{}, nil
 }
