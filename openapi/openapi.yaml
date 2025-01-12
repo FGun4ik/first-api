@@ -27,7 +27,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Task'
+              type: object
+              properties:
+                task:
+                  type: string
+                is_done:
+                  type: boolean
+                user_id:
+                  type: integer
       responses:
         '201':
           description: The created task
@@ -52,7 +59,15 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Task'
+              type: object
+              properties:
+                task:
+                  type: string
+                is_done:
+                  type: boolean
+                user_id:
+                  type: integer
+                  format: uint
       responses:
         '200':
           description: Updated task
@@ -79,7 +94,7 @@ paths:
       tags:
         - users
       responses:
-        200:
+        '200':
           description: A list of users
           content:
             application/json:
@@ -143,6 +158,27 @@ paths:
       responses:
         '204':
           description: No content
+  /tasks/user/{user_id}:
+    get:
+      summary: Get task by user_id
+      tags:
+        - tasks
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: ID user for get task
+      responses:
+        '200':
+          description: User's task
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Task'
 components:
   schemas:
     Task:
@@ -155,6 +191,9 @@ components:
           type: string
         is_done:
           type: boolean
+        user_id:
+          type: integer
+          format: uint
     User:
       type: object
       properties:

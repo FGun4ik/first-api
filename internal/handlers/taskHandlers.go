@@ -10,6 +10,27 @@ type TaskHandler struct {
 	Service *taskService.TaskService
 }
 
+func (h *TaskHandler) GetTasksUserUserId(ctx context.Context, request tasks.GetTasksUserUserIdRequestObject) (tasks.GetTasksUserUserIdResponseObject, error) {
+	userID := request.UserId
+
+	userTasks, err := h.Service.GetTasksByUserID(uint(userID))
+	if err != nil {
+		return nil, err
+	}
+
+	response := tasks.GetTasksUserUserId200JSONResponse{}
+	for _, task := range userTasks {
+		response = append(response, tasks.Task{
+			Id:     &task.ID,
+			Task:   &task.Task,
+			IsDone: &task.IsDone,
+			UserId: &task.UserID,
+		})
+
+	}
+	return response, nil
+}
+
 func NewHandler(service *taskService.TaskService) *TaskHandler {
 	return &TaskHandler{
 		Service: service,
@@ -48,6 +69,7 @@ func (h *TaskHandler) PostTasks(_ context.Context, request tasks.PostTasksReques
 	taskToCreate := taskService.Task{
 		Task:   *taskRequest.Task,
 		IsDone: *taskRequest.IsDone,
+		UserID: uint(*taskRequest.UserId),
 	}
 	createdTask, err := h.Service.CreateTask(taskToCreate)
 
@@ -59,6 +81,7 @@ func (h *TaskHandler) PostTasks(_ context.Context, request tasks.PostTasksReques
 		Id:     &createdTask.ID,
 		Task:   &createdTask.Task,
 		IsDone: &createdTask.IsDone,
+		UserId: &createdTask.UserID,
 	}
 	// Просто возвращаем респонс!
 	return response, nil
@@ -91,4 +114,25 @@ func (h *TaskHandler) DeleteTasksId(ctx context.Context, request tasks.DeleteTas
 	_ = h.Service.DeleteTaskById(uint(id))
 
 	return tasks.DeleteTasksId204Response{}, nil
+}
+
+func (h *TaskHandler) GetTasksByUserID(ctx context.Context, request tasks.GetTasksUserUserIdRequestObject) (tasks.GetTasksUserUserIdResponseObject, error) {
+	userID := request.UserId
+
+	userTasks, err := h.Service.GetTasksByUserID(uint(userID))
+	if err != nil {
+		return nil, err
+	}
+	response := tasks.GetTasksUserUserId200JSONResponse{}
+
+	for _, task := range userTasks {
+		response = append(response, tasks.Task{
+			Id:     &task.ID,
+			Task:   &task.Task,
+			IsDone: &task.IsDone,
+			UserId: &task.UserID,
+		})
+	}
+
+	return response, nil
 }

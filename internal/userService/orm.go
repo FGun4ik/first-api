@@ -1,9 +1,7 @@
 package userService
 
-import "gorm.io/gorm"
+import (
+	"FirstProject/internal/models"
+)
 
-type User struct {
-	gorm.Model
-	Email    string `json:"email"`
-	Password string `json:"password"`
-}
+type User = models.User
