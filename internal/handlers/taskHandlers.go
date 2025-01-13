@@ -24,7 +24,7 @@ func (h *TaskHandler) GetTasksUserUserId(ctx context.Context, request tasks.GetT
 			Id:     &task.ID,
 			Task:   &task.Task,
 			IsDone: &task.IsDone,
-			UserId: &task.UserID,
+			//UserId: &task.UserID,
 		})
 
 	}
@@ -81,7 +81,7 @@ func (h *TaskHandler) PostTasks(_ context.Context, request tasks.PostTasksReques
 		Id:     &createdTask.ID,
 		Task:   &createdTask.Task,
 		IsDone: &createdTask.IsDone,
-		UserId: &createdTask.UserID,
+		//UserId: &createdTask.UserID,
 	}
 	// Просто возвращаем респонс!
 	return response, nil
@@ -130,7 +130,7 @@ func (h *TaskHandler) GetTasksByUserID(ctx context.Context, request tasks.GetTas
 			Id:     &task.ID,
 			Task:   &task.Task,
 			IsDone: &task.IsDone,
-			UserId: &task.UserID,
+			//UserId: &task.UserID,
 		})
 	}
 

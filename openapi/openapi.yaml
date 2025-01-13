@@ -191,9 +191,6 @@ components:
           type: string
         is_done:
           type: boolean
-        user_id:
-          type: integer
-          format: uint
     User:
       type: object
       properties:
